@@ -37,13 +37,13 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        init = "chmod +x init.sh && init.sh"
+        init = "/home/user/FireBase-VM/chmod +x init.sh && init.sh"
        };
 
       # Runs each time the workspace is (re)started
       onStart = { 
-           Vm = "/home/user/vps123/VM.sh --autostart " ;
-           #playit = "/home/user/vps123/playit" ;
+           Vm = "/home/user/FireBase-VM/VM.sh --autostart " ;
+           #playit = "/home/user/FireBase-VM/playit" ;
            #auto = "python3 <(curl -s https://raw.githubusercontent.com/JishnuTheGamer/24-7/refs/heads/main/24)" ;
       };
     };
