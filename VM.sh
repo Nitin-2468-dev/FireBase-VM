@@ -917,14 +917,31 @@ setup_vm_image() {
             # Find the qcow2 file in the extracted contents
             local qcow2_file=$(find "$extract_dir" -name "*.qcow2" -type f | head -n 1)
             
-            if [[ -z "$qcow2_file" ]]; then
-                print_status "ERROR" "No qcow2 file found in the extracted archive"
-                rm -rf "$extract_dir" "$download_file"
-                exit 1
+            if [[ -n "$qcow2_file" ]]; then
+                # Found qcow2 file, use it directly
+                print_status "INFO" "Found qcow2 image: $(basename "$qcow2_file")"
+                mv "$qcow2_file" "$IMG_FILE"
+            else
+                # No qcow2 file found, look for raw disk image
+                local raw_file=$(find "$extract_dir" -name "*.raw" -o -name "disk.raw" -type f | head -n 1)
+                
+                if [[ -z "$raw_file" ]]; then
+                    print_status "ERROR" "No qcow2 or raw disk image found in the extracted archive"
+                    rm -rf "$extract_dir" "$download_file"
+                    exit 1
+                fi
+                
+                print_status "INFO" "Found raw disk image: $(basename "$raw_file")"
+                print_status "INFO" "Converting raw image to qcow2 format..."
+                
+                if ! qemu-img convert -f raw -O qcow2 "$raw_file" "$IMG_FILE"; then
+                    print_status "ERROR" "Failed to convert raw image to qcow2 format"
+                    rm -rf "$extract_dir" "$download_file"
+                    exit 1
+                fi
+                
+                print_status "SUCCESS" "Image converted to qcow2 format successfully"
             fi
-            
-            print_status "INFO" "Found qcow2 image: $(basename "$qcow2_file")"
-            mv "$qcow2_file" "$IMG_FILE"
             
             # Cleanup
             rm -rf "$extract_dir" "$download_file"
