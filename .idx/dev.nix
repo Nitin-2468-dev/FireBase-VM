@@ -37,7 +37,7 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        
+        init = "chmod +x init.sh && init.sh"
        };
 
       # Runs each time the workspace is (re)started
