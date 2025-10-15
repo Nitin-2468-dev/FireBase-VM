@@ -37,7 +37,7 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        init = "/home/user/FireBase-VM/chmod +x init.sh && init.sh";
+        init = "chmod +x /home/user/FireBase-VM/init.sh && /home/user/FireBase-VM/init.sh";
        };
 
       # Runs each time the workspace is (re)started
