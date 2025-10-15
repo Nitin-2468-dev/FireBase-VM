@@ -894,11 +894,48 @@ setup_vm_image() {
         print_status "INFO" "Image file already exists. Skipping download."
     else
         print_status "INFO" "Downloading image from $IMG_URL..."
-        if ! wget --progress=bar:force "$IMG_URL" -O "$IMG_FILE.tmp"; then
-            print_status "ERROR" "Failed to download image from $IMG_URL"
-            exit 1
+        
+        # Determine if the URL points to a tar.xz file
+        if [[ "$IMG_URL" == *.tar.xz ]]; then
+            local download_file="$IMG_FILE.tar.xz"
+            if ! wget --progress=bar:force "$IMG_URL" -O "$download_file"; then
+                print_status "ERROR" "Failed to download image from $IMG_URL"
+                exit 1
+            fi
+            
+            print_status "INFO" "Extracting tar.xz archive..."
+            # Extract the tar.xz file to a temporary directory
+            local extract_dir="$VM_DIR/$VM_NAME.extract"
+            mkdir -p "$extract_dir"
+            
+            if ! tar -xJf "$download_file" -C "$extract_dir"; then
+                print_status "ERROR" "Failed to extract tar.xz archive"
+                rm -rf "$extract_dir" "$download_file"
+                exit 1
+            fi
+            
+            # Find the qcow2 file in the extracted contents
+            local qcow2_file=$(find "$extract_dir" -name "*.qcow2" -type f | head -n 1)
+            
+            if [[ -z "$qcow2_file" ]]; then
+                print_status "ERROR" "No qcow2 file found in the extracted archive"
+                rm -rf "$extract_dir" "$download_file"
+                exit 1
+            fi
+            
+            print_status "INFO" "Found qcow2 image: $(basename "$qcow2_file")"
+            mv "$qcow2_file" "$IMG_FILE"
+            
+            # Cleanup
+            rm -rf "$extract_dir" "$download_file"
+            print_status "SUCCESS" "Image extracted successfully"
+        else
+            if ! wget --progress=bar:force "$IMG_URL" -O "$IMG_FILE.tmp"; then
+                print_status "ERROR" "Failed to download image from $IMG_URL"
+                exit 1
+            fi
+            mv "$IMG_FILE.tmp" "$IMG_FILE"
         fi
-        mv "$IMG_FILE.tmp" "$IMG_FILE"
     fi
     
     # Resize the disk image if needed
@@ -1659,6 +1696,7 @@ declare -A OS_OPTIONS=(
     ["CentOS Stream 9"]="centos|stream9|https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2|centos9|centos|centos"
     ["AlmaLinux 9"]="almalinux|9|https://repo.almalinux.org/almalinux/9/cloud/x86_64/images/AlmaLinux-9-GenericCloud-latest.x86_64.qcow2|almalinux9|alma|alma"
     ["Rocky Linux 9"]="rockylinux|9|https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud.latest.x86_64.qcow2|rocky9|rocky|rocky"
+    ["Kali Linux 2025.3"]="kali|2025.3|https://kali.download/cloud-images/kali-2025.3/kali-linux-2025.3-cloud-genericcloud-amd64.tar.xz|kali|kali|kali"
 )
 
 # Parse command line arguments
